@@ -1,2 +1,4 @@
 venv/
 .env
+networkSecurity2026.egg-info
+logs
