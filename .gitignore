@@ -2,3 +2,6 @@ venv/
 .env
 networkSecurity2026.egg-info
 logs
+Artifacts/
+test.py
+notebook/

@@ -1,0 +1,75 @@
+# -------------------------------------------------
+# EVENTOS QUE DISPARAN EL WORKFLOW
+# -------------------------------------------------
+on:
+  push:
+    # El workflow se ejecuta solo cuando hay un push
+    # a la rama master
+    branches:
+      - master
+
+    # Y solo si los cambios están dentro de la carpeta infrastructure/
+    # (infraestructura como código: Terraform)
+    paths:
+      - infrastructure/*
+
+# -------------------------------------------------
+# NOMBRE DEL WORKFLOW (VISIBLE EN GITHUB ACTIONS)
+# -------------------------------------------------
+name: Apply changes to infrastructure
+
+# -------------------------------------------------
+# DEFINICIÓN DE LOS JOBS
+# -------------------------------------------------
+jobs:
+  deploy:
+    # Nombre del job
+    name: Deploy
+
+    # Sistema operativo donde se ejecutará el job
+    runs-on: ubuntu-latest
+
+    # -------------------------------------------------
+    # PASOS DEL JOB
+    # -------------------------------------------------
+    steps:
+      # ---------------------------------------------
+      # PASO 1: CLONAR EL REPOSITORIO
+      # ---------------------------------------------
+      - name: Checkout
+        # Action oficial para clonar el repo en el runner
+        uses: actions/checkout@v2
+
+      # ---------------------------------------------
+      # PASO 2: CONFIGURAR CREDENCIALES DE AWS
+      # ---------------------------------------------
+      - name: Configure AWS credentials
+        # Action oficial de AWS para autenticar el runner
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          # Credenciales almacenadas como secrets en GitHub
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+          # Región por defecto de AWS
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      # ---------------------------------------------
+      # PASO 3: INICIALIZAR TERRAFORM
+      # ---------------------------------------------
+      - name: Initialize Terraform modules
+        id: terraform-init
+        run: |
+          # Inicializa Terraform dentro del directorio infrastructure/
+          # Descarga providers, módulos y configura el backend
+          terraform -chdir=infrastructure/ init
+
+      # ---------------------------------------------
+      # PASO 4: APLICAR LA INFRAESTRUCTURA
+      # ---------------------------------------------
+      - name: Apply the Terraform modules
+        id: terraform-apply
+        run: |
+          # Aplica los cambios definidos en Terraform
+          # --auto-approve evita la confirmación manual
+          terraform -chdir=infrastructure/ apply --auto-approve
